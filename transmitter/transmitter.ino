@@ -7,15 +7,13 @@
 //-----------------------------------------------------------------------------------
 //things for XBEE
 XBee xbee = XBee();
-XBeeAddress64 Broadcast = XBeeAddress64(0x0013A200, 0x41E5947F); //broadcasting
-float payloadQty;
-int cleanPayload;
-#define LED 13  // The pin the LED is connected to
+XBeeAddress64 Broadcast = XBeeAddress64(0x0013A200, 0x41E5947F); //address of receiving Xbee... make sure to have exact address and not broadcast for optimal speed
+#define LED 13  // LED will tell us when data is being sent
 //----------------------------------------------------------------------------------
 //things for VC0706
 #if defined(__AVR__) || defined(ESP8266)
 #include <SoftwareSerial.h>
-SoftwareSerial cameraconnection(64, 12); //TX=62 and RX=10
+SoftwareSerial cameraconnection(64, 12); //TX=64 and RX=12
 #else
 //#define cameraconnection Serial1
 #endif
@@ -29,7 +27,6 @@ char filename[14];
 //things for LCD
 const int rs = 8, en = 9, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
-//char empty = "                ";
 
 //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -52,7 +49,7 @@ void setup() {
   }
   //----------------------------------------------------------------------------------
   //setting up CAM, trying to locate the camera
-  if (cam.begin(38400)) {
+  if (cam.begin(38400)) { //baud rate determined by manufacturer specs
     Serial.println("Camera Found:");
   } else {
     Serial.println("No camera found?");
@@ -103,14 +100,14 @@ void setup() {
 
 void loop() {
 
-  digitalWrite(LED,LOW);
+  digitalWrite(LED,LOW); //turn LED off when data is not being sent
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("SolferiNode MK1");
   lcd.setCursor(0,1);
   lcd.print("Waiting...");
 
- if (cam.motionDetected()) {
+ if (cam.motionDetected()) { 
    Serial.println("Motion!");   
    cam.setMotionDetect(false);
    lcd.clear();
@@ -124,11 +121,11 @@ void loop() {
     //lcd.setCursor(0,0);
     //lcd.print("Picture Taken");
 
-  //semaforo 1
+  //semaforo 1... not currently being used in the receiving end
   ZBTxRequest opened = ZBTxRequest(Broadcast, "OPEN", sizeof("OPEN")-1);
   xbee.send(opened);
-  
-  //char filename[13]; //already declared as a global variable
+
+  //creating file names with increasing index (up to 1000... will have to make more xD)
   strcpy(filename, "IMAGE000.JPG");
   for (int i = 0; i < 1000; i++) {
     filename[5] = '0' + i/100;
@@ -150,9 +147,6 @@ void loop() {
   lcd.setCursor(11,0);
   lcd.print("bytes");
   uint16_t jpglen = cam.frameLength();
-  //ZBTxRequest zbtx = ZBTxRequest(Broadcast, jpglen, sizeof(jpglen));
-  
-  //xbee.send(zbtx);
   Serial.print(jpglen);
   Serial.println(" byte image");
  
@@ -161,7 +155,7 @@ void loop() {
   while (jpglen > 0) {
     // read 32 bytes at a time;
     uint8_t *buffer;
-    uint8_t bytesToRead = min((int)64, jpglen); // change 32 to 64 for a speedup but may not work with all setups!
+    uint8_t bytesToRead = min((int)64, jpglen); // 64 is the max that will work with this setup
     buffer = cam.readPicture(bytesToRead);
     imgFile.write(buffer, bytesToRead);
     ZBTxRequest zbtx = ZBTxRequest(Broadcast, buffer, bytesToRead);
