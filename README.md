@@ -10,3 +10,5 @@ The transmitter code is written in Arduino (C/C++). This code captures an image 
 RECEIVER:
 
 The receiver code is written in Python as it will be run on a Raspberry Pi 4. This code receives bytes through an Xbee S2C, converts them to a JPEG,  saves them locally and also uploads them to a dropbox
+
+![image](https://user-images.githubusercontent.com/87677161/175927296-e879b648-fd00-423c-aa63-854adb30d9eb.png)
